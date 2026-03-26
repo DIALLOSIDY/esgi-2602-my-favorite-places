@@ -21,6 +21,6 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./server
           push: true
           tags: ghcr.io/diallosidy/esgi-2602-my-favorite-places:latest
