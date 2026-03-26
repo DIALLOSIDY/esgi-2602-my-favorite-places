@@ -23,4 +23,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner}}:latest
+          tags: ghcr.io/diallosidy/esgi-2602-my-favorite-places:latest
