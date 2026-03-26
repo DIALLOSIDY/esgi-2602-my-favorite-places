@@ -1,0 +1,14 @@
+
+services:
+  db:
+    images: postgres
+    restart: always
+    environment: 
+      POSTGRES_PASSWORD: password
+
+  adminer:
+    images: adminer
+    restart: always
+    port:
+      - 8080:8080
+
