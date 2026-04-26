@@ -1,26 +1,96 @@
 
-name: image API
+name: CI
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Login GHCR
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Lint server
+        run: |
+          cd server
+          npm ci
+          npm run lint
+
+      - name: Lint client
+        run: |
+          cd client/mon-projet
+          npm ci
+          npm run lint
+
+  build-server:
+    runs-on: ubuntu-latest
+    needs: lint
+    if: contains(github.event.head_commit.modified, 'server/') || github.ref == 'refs/heads/dev'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/diallosidy/esgi-2602-my-favorite-places/server
+          tags: |
+            type=raw,value=${{ github.ref_name }}
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push server image
         uses: docker/build-push-action@v5
         with:
           context: ./server
           push: true
-          tags: ghcr.io/diallosidy/esgi-2602-my-favorite-places:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          target: production
+
+  build-client:
+    runs-on: ubuntu-latest
+    needs: lint
+    if: contains(github.event.head_commit.modified, 'client/') || github.ref == 'refs/heads/dev'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/diallosidy/esgi-2602-my-favorite-places/client
+          tags: |
+            type=raw,value=${{ github.ref_name }}
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push client image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client/mon-projet
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
